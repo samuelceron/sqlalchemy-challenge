@@ -35,12 +35,12 @@ Station = Base.classes.station
 def welcome():
     """List all available API routes."""
     return (
-        f"Available Routes:<br/>"
-        f"Precipitation: /api/v1.0/precipitation<br/>"
-        f"List of Stations: /api/v1.0/stations<br/>"
-        f"Temperature for one year: /api/v1.0/tobs<br/>"
-        f"Temperature stat from the start date(yyyy-mm-dd): /api/v1.0/yyyy-mm-dd<br/>"
-        f"Temperature stat from start to end dates(yyyy-mm-dd): /api/v1.0/yyyy-mm-dd/yyyy-mm-dd"
+        f"<h1 style='color:red'>Available Routes:</h1><br/>"
+        f"<li>Precipitation: /api/v1.0/precipitation</li><br/>"
+        f"<li>Stations: /api/v1.0/stations</li><br/>"
+        f"<li>Tobs: /api/v1.0/tobs</li><br/>"
+        f"<li>Temperature from the start date: /api/v1.0/start</li><br/>"
+        f"<li>Temperature stat from start to end date: /api/v1.0/start-end</li>"
     )
 #/api/v1.0/precipitation
 #Return a list of dates and precipitations
@@ -107,8 +107,52 @@ def tobs():
 
     return jsonify(tobs_list)
 
-    #
+
+#/api/v1.0/<start>
+@app.route('/api/v1.0/<start>')
+def get_t_start(start):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    #Query
+    queryresult = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start).all()
+    session.close()
     
+
+    #Set data on a misc list with the result
+    misc_list = []
+    for min,avg,max in queryresult:
+        misc_dict = {}
+        misc_dict["Min"] = min
+        misc_dict["Average"] = avg
+        misc_dict["Max"] = max
+        misc_list.append(misc_dict)
+
+    return jsonify(misc_list)
+
+#/api/v1.0/<start>
+@app.route('/api/v1.0/<start><end>')
+def get_t_start(start):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    #Query
+    queryresult = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start).filter(Measurement.date <= end).all()
+    session.close()
+    
+
+    #Set data on a misc list with the result
+    misc_list = []
+    for min,avg,max in queryresult:
+        misc_dict = {}
+        misc_dict["Min"] = min
+        misc_dict["Average"] = avg
+        misc_dict["Max"] = max
+        misc_list.append(misc_dict)
+
+    return jsonify(misc_list)
 
 if __name__ == '__main__':
     app.run(debug=True)
